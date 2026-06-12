@@ -24,6 +24,14 @@ module.exports = async (env, options) => {
         import: ["./src/taskpane/index.tsx", "./src/taskpane/taskpane.html"],
         dependOn: "react",
       },
+      dialog: {
+        import: ["./src/dialog/index.tsx", "./src/dialog/dialog.html"],
+        dependOn: "react",
+      },
+      resourcePicker: {
+        import: ["./src/resource-picker/index.tsx", "./src/resource-picker/resource-picker.html"],
+        dependOn: "react",
+      },
       commands: "./src/commands/commands.ts",
     },
     output: {
@@ -65,6 +73,16 @@ module.exports = async (env, options) => {
         filename: "taskpane.html",
         template: "./src/taskpane/taskpane.html",
         chunks: ["polyfill", "taskpane", "react"],
+      }),
+      new HtmlWebpackPlugin({
+        filename: "dialog.html",
+        template: "./src/dialog/dialog.html",
+        chunks: ["polyfill", "dialog", "react"],
+      }),
+      new HtmlWebpackPlugin({
+        filename: "resource-picker.html",
+        template: "./src/resource-picker/resource-picker.html",
+        chunks: ["polyfill", "resourcePicker", "react"],
       }),
       new CopyWebpackPlugin({
         patterns: [
