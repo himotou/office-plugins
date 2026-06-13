@@ -1,6 +1,6 @@
 # Link Bind Office Plugin
 
-这是一个基于 Microsoft Office Add-in 框架开发的 PowerPoint 插件，提供链接绑定和管理功能。使用 React + TypeScript 构建，支持任务窗格、命令执行和对话框交互。
+这是一个基于 Microsoft Office Add-in 框架开发的 PowerPoint 插件，提供链接绑定和管理功能。使用 React + TypeScript 构建，支持任务窗格、命令执行和对话框交互。 
 
 ## 项目结构
 
