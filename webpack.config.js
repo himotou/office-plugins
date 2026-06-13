@@ -6,7 +6,23 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 
 const urlDev = "https://localhost:3000/";
-const urlProd = "https://www.contoso.com/"; // CHANGE THIS TO YOUR PRODUCTION DEPLOYMENT LOCATION
+
+function normalizeBaseUrl(rawUrl) {
+  const normalizedUrl = rawUrl.endsWith("/") ? rawUrl : `${rawUrl}/`;
+  return new URL(normalizedUrl).toString();
+}
+
+function resolveProductionBaseUrl(env) {
+  const rawBaseUrl = env?.addinBaseUrl || env?.ADDIN_BASE_URL || process.env.ADDIN_BASE_URL;
+
+  if (!rawBaseUrl) {
+    throw new Error(
+      "Missing ADDIN_BASE_URL for production build. Example: ADDIN_BASE_URL=https://<user>.github.io/<repo> npm run build"
+    );
+  }
+
+  return normalizeBaseUrl(rawBaseUrl);
+}
 
 async function getHttpsOptions() {
   const httpsOptions = await devCerts.getHttpsServerOptions();
@@ -15,6 +31,10 @@ async function getHttpsOptions() {
 
 module.exports = async (env, options) => {
   const dev = options.mode === "development";
+  const productionBaseUrl = dev ? urlDev : resolveProductionBaseUrl(env);
+  const productionSiteUrl = productionBaseUrl.endsWith("/") ? productionBaseUrl.slice(0, -1) : productionBaseUrl;
+  const productionOrigin = new URL(productionBaseUrl).origin;
+
   const config = {
     devtool: "source-map",
     entry: {
@@ -70,6 +90,23 @@ module.exports = async (env, options) => {
     },
     plugins: [
       new HtmlWebpackPlugin({
+        filename: "index.html",
+        inject: false,
+        templateContent: `
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta http-equiv="refresh" content="0; url=taskpane.html" />
+              <title>link-bind</title>
+            </head>
+            <body>
+              <p>Redirecting to <a href="taskpane.html">taskpane.html</a>...</p>
+            </body>
+          </html>
+        `,
+      }),
+      new HtmlWebpackPlugin({
         filename: "taskpane.html",
         template: "./src/taskpane/taskpane.html",
         chunks: ["polyfill", "taskpane", "react"],
@@ -96,9 +133,12 @@ module.exports = async (env, options) => {
             transform(content) {
               if (dev) {
                 return content;
-              } else {
-                return content.toString().replace(new RegExp(urlDev, "g"), urlProd);
               }
+
+              return content
+                .toString()
+                .replace(/<AppDomain>https:\/\/localhost:3000<\/AppDomain>/g, `<AppDomain>${productionOrigin}</AppDomain>`)
+                .replace(/https:\/\/localhost:3000/g, productionSiteUrl);
             },
           },
         ],

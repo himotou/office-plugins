@@ -134,23 +134,73 @@ npm run build
 
 ## 部署说明
 
-### 生产环境要求
+### 为什么适合放到 GitHub Pages
 
-1. **HTTPS 强制**: Office Add-in 必须通过 HTTPS 加载
-2. **修改配置**: 更新 `webpack.config.js` 中的 `urlProd` 为实际域名
-3. **更新 Manifest**: 确保 `manifest.xml` 中的 URL 指向生产地址
-4. **证书信任**: 生产环境需使用有效的 SSL 证书
+Office Add-in 要求入口页、命令页和图标资源走 HTTPS。这个项目本身是纯前端静态站点，构建产物都在 `dist/`，所以非常适合直接部署到 GitHub Pages。
 
-### Docker 部署
+### GitHub Pages 部署步骤
 
-项目包含 Dockerfile，可用于构建和部署静态资源：
+1. 把仓库推到 GitHub。
+2. 进入仓库 `Settings -> Pages`。
+3. 在 `Build and deployment` 中把 `Source` 设为 `GitHub Actions`。
+4. 如果你使用默认 Pages 地址，站点会发布到：
 
-```bash
-docker build -t link-bind-plugin .
-docker run -p 8080:80 link-bind-plugin
+```text
+https://<github-user>.github.io/<repo-name>/
 ```
 
-> 注意：Docker 部署仅适用于生产环境，本地调试请使用 `npm start`。
+5. 如果你使用自定义域名，请在仓库 `Settings -> Secrets and variables -> Actions -> Variables` 里新增：
+
+```text
+ADDIN_BASE_URL=https://你的域名或Pages地址
+```
+
+例如：
+
+```text
+ADDIN_BASE_URL=https://plugins.example.com/link-bind
+```
+
+6. 推送到 `main` 或 `master` 后，仓库里的 `.github/workflows/deploy-pages.yml` 会自动构建并发布 `dist/`。
+
+### 本地构建 GitHub 发布版
+
+如果你想先在本地生成一份发布版：
+
+```bash
+ADDIN_BASE_URL=https://<github-user>.github.io/<repo-name> npm run build
+```
+
+构建完成后：
+
+- 页面文件在 `dist/`
+- 生产环境 manifest 在 `dist/manifest.xml`
+
+注意：给 PowerPoint 侧载时，使用的是 `dist/manifest.xml`，不是项目根目录下开发用的 `manifest.xml`。
+
+### manifest 与域名规则
+
+- `SourceLocation`、`Commands.Url`、图标地址会自动替换成 `ADDIN_BASE_URL`
+- `AppDomain` 会自动取这个地址的 origin
+
+例如当：
+
+```text
+ADDIN_BASE_URL=https://evdo.github.io/link-bind
+```
+
+生成结果会是：
+
+- 页面地址：`https://evdo.github.io/link-bind/taskpane.html`
+- 命令页：`https://evdo.github.io/link-bind/commands.html`
+- 域名白名单：`https://evdo.github.io`
+
+### 侧载到 Office 时需要做什么
+
+1. 等 GitHub Pages 发布成功。
+2. 下载或直接使用仓库构建产物里的 `dist/manifest.xml`。
+3. 在 PowerPoint 中通过加载项侧载这个 manifest。
+4. 之后 Office 会从你的 HTTPS 站点加载插件页面。
 
 ## 开发规范
 
