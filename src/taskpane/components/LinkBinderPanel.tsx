@@ -85,7 +85,7 @@ const LinkBinderPanel: React.FC<LinkBinderPanelProps> = ({ initialResourceUrl })
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [isLaunching, setIsLaunching] = useState(false);
 
-  const defaultResourceUrl = useMemo(() => getDefaultResourcePageUrl(window.location.origin), []);
+  const defaultResourceUrl = useMemo(() => getDefaultResourcePageUrl(window.location.href), []);
 
   const persistResourceUrl = (): string => {
     const normalizedUrl = normalizeAbsoluteUrl(resourceUrl);
@@ -112,7 +112,7 @@ const LinkBinderPanel: React.FC<LinkBinderPanelProps> = ({ initialResourceUrl })
   };
 
   const handleReset = () => {
-    const nextUrl = resetResourcePageUrl(window.location.origin);
+    const nextUrl = resetResourcePageUrl(window.location.href);
     setResourceUrl(nextUrl);
     setFeedback({
       intent: "warning",

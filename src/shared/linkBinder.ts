@@ -32,7 +32,9 @@ function getResourceDisplayText(selection: SelectionSnapshot, resource: Resource
 }
 
 function buildDialogUrl(pathname: string, params?: Record<string, string>): string {
-  const url = new URL(pathname, window.location.origin);
+  const baseUrl = window.location.href;
+  const normalizedPath = pathname.startsWith("/") ? `.${pathname}` : pathname;
+  const url = new URL(normalizedPath, baseUrl);
 
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -276,7 +278,7 @@ export async function openLinkBinderDialog(): Promise<void> {
 
   closeActiveDialog();
 
-  const resourceUrl = getStoredResourcePageUrl(window.location.origin);
+  const resourceUrl = getStoredResourcePageUrl(window.location.href);
   const dialog = await displayDialogAsync(buildDialogUrl("/dialog.html"), {
     width: 48,
     height: 72,

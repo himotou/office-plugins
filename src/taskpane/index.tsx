@@ -15,7 +15,7 @@ const root = rootElement ? createRoot(rootElement) : undefined;
 Office.onReady(() => {
   root?.render(
     <FluentProvider theme={webLightTheme}>
-      <App title={title} resourceUrl={getStoredResourcePageUrl(window.location.origin)} />
+      <App title={title} resourceUrl={getStoredResourcePageUrl(window.location.href)} />
     </FluentProvider>
   );
 });
