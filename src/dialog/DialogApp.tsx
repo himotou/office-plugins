@@ -36,8 +36,8 @@ type FeedbackState =
 const useStyles = makeStyles({
   root: {
     minHeight: "100vh",
-    display: "grid",
-    gridTemplateRows: "auto auto 1fr",
+    display: "flex",
+    flexDirection: "column",
     backgroundColor: "#f8fafc",
   },
   header: {
@@ -63,8 +63,27 @@ const useStyles = makeStyles({
     gap: "10px",
     flexWrap: "wrap",
   },
+  feedbackWrap: {
+    padding: "16px 20px 0",
+  },
+  feedbackMessage: {
+    display: "block",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    overflowWrap: "anywhere",
+    lineHeight: 1.7,
+  },
+  infoContent: {
+    padding: "20px",
+    maxWidth: "800px",
+    margin: "0 auto",
+    lineHeight: 1.8,
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+  },
   frameWrap: {
     minHeight: 0,
+    flex: "1 1 auto",
     display: "grid",
     gridTemplateColumns: "minmax(260px, 320px) 1fr",
     gap: "16px",
@@ -181,7 +200,17 @@ const DialogApp: React.FC = () => {
         setResourceSelection(fallbackSelection);
         setResourceTitle(message.selection.hyperlinkScreenTip || fallbackSelection.title || "");
         setResourceLink(message.selection.hyperlinkAddress || fallbackSelection.resolvedUrl || fallbackSelection.url);
-        setFeedback(null);
+        if (!message.selection.canReadExistingHyperlink && !message.selection.isInsertionPoint) {
+          setFeedback({
+            intent: "warning",
+            title: "当前版本不支持编辑已有超链接",
+            message:
+              message.selection.existingHyperlinkSupportMessage ||
+              "当前版本不支持对当前选区超链接进行编辑，如需编辑，请手动复制原链接后处理。",
+          });
+        } else {
+          setFeedback(null);
+        }
         return;
       }
 
@@ -244,9 +273,18 @@ const DialogApp: React.FC = () => {
       {
         type: bindingMode === "edit-hyperlink" ? "resource-edit" : "resource-selected",
         mode: bindingMode,
-        url: selection.hyperlinkAddress || resourceLink || resourceUrl,
-        resolvedUrl: selection.hyperlinkAddress || resourceLink || resourceUrl,
-        title: selection.hyperlinkScreenTip || resourceTitle || selection.text,
+        url:
+          selection.canReadExistingHyperlink && selection.hyperlinkAddress
+            ? selection.hyperlinkAddress
+            : resourceLink || resourceUrl,
+        resolvedUrl:
+          selection.canReadExistingHyperlink && selection.hyperlinkAddress
+            ? selection.hyperlinkAddress
+            : resourceLink || resourceUrl,
+        title:
+          selection.canReadExistingHyperlink && selection.hyperlinkScreenTip
+            ? selection.hyperlinkScreenTip
+            : resourceTitle || selection.text,
         text: selection.text,
       },
       "*"
@@ -299,7 +337,6 @@ const DialogApp: React.FC = () => {
           <Text weight="semibold" size={500}>
             {infoTitle}
           </Text>
-          <Text>{infoDescription}</Text>
         </div>
         <div className={styles.toolbar}>
           <div className={styles.toolbarButtons}>
@@ -307,6 +344,9 @@ const DialogApp: React.FC = () => {
               关闭
             </Button>
           </div>
+        </div>
+        <div className={styles.infoContent}>
+          <Text>{infoDescription}</Text>
         </div>
       </div>
     );
@@ -322,8 +362,10 @@ const DialogApp: React.FC = () => {
           {selection?.isInsertionPoint
             ? "当前是光标插入模式，确认后会在光标位置插入资源标题并自动设置超链接。"
             : bindingMode === "edit-hyperlink"
-            ? "当前选区已经带有超链接，资源页会收到编辑态初始化数据。"
-            : "选区信息会先被插件缓存，确认后把你选择的资源链接写回 PowerPoint 当前文字。"}
+              ? "当前选区已经带有超链接，资源页会收到编辑态初始化数据。"
+              : selection && selection.canReadExistingHyperlink === false
+                ? "当前版本只能读取选中文本，不能读取或编辑该选区原有超链接；你仍可继续绑定新链接。"
+                : "选区信息会先被插件缓存，确认后把你选择的资源链接写回 PowerPoint 当前文字。"}
         </Text>
       </div>
 
@@ -345,17 +387,19 @@ const DialogApp: React.FC = () => {
         </div>
       </div>
 
+      {feedback ? (
+        <div className={styles.feedbackWrap}>
+          <MessageBar intent={feedback.intent}>
+            <MessageBarBody>
+              <MessageBarTitle>{feedback.title}</MessageBarTitle>
+              <Text className={styles.feedbackMessage}>{feedback.message}</Text>
+            </MessageBarBody>
+          </MessageBar>
+        </div>
+      ) : null}
+
       <div className={styles.frameWrap}>
         <Card className={styles.sideCard}>
-          {feedback ? (
-            <MessageBar intent={feedback.intent}>
-              <MessageBarBody>
-                <MessageBarTitle>{feedback.title}</MessageBarTitle>
-                {feedback.message}
-              </MessageBarBody>
-            </MessageBar>
-          ) : null}
-
           <div>
             <Caption1 className={styles.metaLabel}>当前选中文本</Caption1>
             <div className={styles.selectedText}>
@@ -378,7 +422,9 @@ const DialogApp: React.FC = () => {
                   ? "光标插入超链接"
                   : bindingMode === "edit-hyperlink"
                     ? "编辑已有超链接"
-                    : "新建超链接"}
+                    : selection && selection.canReadExistingHyperlink === false
+                      ? "新建超链接（不支持读取已有链接）"
+                      : "新建超链接"}
               </Text>
             </div>
           </div>

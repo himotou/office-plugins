@@ -1,6 +1,10 @@
 export interface SelectionSnapshot {
   slideId: string;
   shapeId: string;
+  shapePath?: string[];
+  apiVersion?: string;
+  canReadExistingHyperlink?: boolean;
+  existingHyperlinkSupportMessage?: string;
   start: number;
   length: number;
   text: string;

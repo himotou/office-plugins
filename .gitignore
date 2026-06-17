@@ -16,3 +16,11 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local temporary backups
+*.bak
+*.backup
+*.backup-*
+*.broken
+*.pre-progressive
+*.v*-backup
