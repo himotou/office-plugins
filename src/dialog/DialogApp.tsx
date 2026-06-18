@@ -382,7 +382,7 @@ const DialogApp: React.FC = () => {
             取消
           </Button>
           <Button icon={<Checkmark24Regular />} appearance="primary" onClick={handleApply}>
-            确认绑定
+            确认
           </Button>
         </div>
       </div>
