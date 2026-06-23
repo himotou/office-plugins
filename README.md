@@ -202,6 +202,128 @@ ADDIN_BASE_URL=https://evdo.github.io/link-bind
 3. 在 PowerPoint 中通过加载项侧载这个 manifest。
 4. 之后 Office 会从你的 HTTPS 站点加载插件页面。
 
+### Office 2021 没有“上传我的加载项”入口时
+
+某些较老的桌面版 Office，尤其是 PowerPoint 2021，可能没有上传 manifest 的入口。这个仓库里补了两个脚本，可以直接把 manifest 写到本机 Office 会读取的位置。
+
+注意：
+
+1. 线上环境请优先使用 `dist/manifest.xml`，不要用根目录的 `manifest.xml`。
+2. 运行脚本前最好先退出 PowerPoint，执行完后再重新打开。
+3. 这两个脚本是给 `PowerPoint` 用的，因为当前 manifest 的宿主是 `Presentation`。
+4. `Mac` 上，尤其是 Office 2021，请先打开一个演示文稿，再走 `插入 > 我的加载项` 右侧的小下拉箭头。不要直接点“我的加载项”主按钮，因为那个面板里不一定会显示本地 sideload 的入口。
+
+Mac：
+
+```bash
+sh scripts/install-office-addin-mac.sh
+```
+
+如果你要指定其他 manifest：
+
+```bash
+sh scripts/install-office-addin-mac.sh /path/to/manifest.xml
+```
+
+脚本会把 manifest 复制到：
+
+```text
+~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef/
+```
+
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-office-addin-windows.ps1
+```
+
+如果你要指定其他 manifest：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-office-addin-windows.ps1 -ManifestPath C:\path\to\manifest.xml
+```
+
+脚本会做两件事：
+
+1. 把 manifest 复制到 `%LOCALAPPDATA%\link-bind-office-addin\`
+2. 写入注册表 `HKCU\Software\Microsoft\Office\16.0\Wef\Developer`
+
+执行完成后，重新打开 PowerPoint，先打开一个演示文稿，再到 `插入 > 我的加载项` 右侧的小下拉箭头里查看即可。老版本通常会在启动时读取这里的本地配置。
+
+注意：上面的 `install` 脚本只是“注册到本地目录/配置”，不等于一定会像 `npm start` 那样马上弹出“插件可用”。`npm start` 走的是“注册 + 生成一个带 web extension 的临时 PPT + 直接打开”的完整 sideload 流程。
+
+如果你想测试“本地安装脚本 + 手动打开加载项”这条路，别直接用默认的 `dist/manifest.xml`，而是显式传 `manifest.xml`，因为它指向本机 `https://localhost:3000`。默认的 `dist/manifest.xml` 指向公网地址，只有在那个地址能被 Office 访问时才会正常出现。
+
+本地测试流程：
+
+1. 先运行 `npm start` 或 `npm run dev-server`，让 `https://localhost:3000` 可用
+2. 再执行 `sh scripts/install-office-addin-mac.sh manifest.xml`
+3. 完全退出 PowerPoint 后重新打开
+4. 打开一个演示文稿
+5. 到 `插入 > 我的加载项` 右侧的小下拉箭头里查看
+
+如果这条流程能出现在菜单里，说明“安装脚本”这条路是通的。正式用户则需要你给他们一份指向公网 HTTPS 的 manifest。
+
+如果你希望像 `npm start` 一样，执行脚本后直接打开 PowerPoint 并触发 sideload，请用下面这组脚本。
+
+Mac：
+
+```bash
+sh scripts/sideload-office-addin-mac.sh
+```
+
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\sideload-office-addin-windows.ps1
+```
+
+也支持指定 manifest：
+
+```bash
+sh scripts/sideload-office-addin-mac.sh /path/to/manifest.xml
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\sideload-office-addin-windows.ps1 -ManifestPath C:\path\to\manifest.xml
+```
+
+这组 `sideload` 脚本会先清掉旧的本地配置，再调用 `office-addin-dev-settings sideload`，效果更接近 `npm start`，更适合验证“老版本没有上传入口时，脚本能不能把加载项真正拉起来”。
+
+### 清理本地配置
+
+如果你要反复测试安装/卸载，也可以直接用下面这组清理脚本。
+
+注意：`Mac` 清理脚本会按微软建议尽量清 sideload 目录和相关缓存，而不只是删单个 manifest。这样更利于排查“明明写进去了但 Office 不刷新”的情况，但也会把这个 PowerPoint 里的其他 sideload 加载项一起清掉。
+
+Mac：
+
+```bash
+sh scripts/remove-office-addin-mac.sh
+```
+
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\remove-office-addin-windows.ps1
+```
+
+也支持指定 manifest：
+
+```bash
+sh scripts/remove-office-addin-mac.sh /path/to/manifest.xml
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\remove-office-addin-windows.ps1 -ManifestPath C:\path\to\manifest.xml
+```
+
+清理内容：
+
+1. Mac 清理 `~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef/` 以及相关缓存目录内容
+2. Windows 删除 `%LOCALAPPDATA%\link-bind-office-addin\` 下对应 add-in Id 的本地 manifest
+3. Windows 删除注册表 `HKCU\Software\Microsoft\Office\16.0\Wef\Developer` 里对应 add-in Id 的配置
+
 ## 开发规范
 
 - 遵循 ESLint 规则 (`eslint-plugin-office-addins`)
